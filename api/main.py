@@ -141,8 +141,8 @@ async def get_results(year: int = 2026):
     try:
         df = pd.read_sql_query(f"""
             SELECT r.*, ra.EventName, ra.Country, ra.EventDate
-            FROM Results_Clean r
-            LEFT JOIN Races_Clean ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
+            FROM "Results_Clean" r
+            LEFT JOIN "Races_Clean" ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
             WHERE r.Year = {year}
             ORDER BY r.RaceNumber, r.Position
         """, engine)
@@ -164,7 +164,7 @@ async def get_standings(year: int = 2026):
         # Classement pilotes
         drivers = pd.read_sql_query(f"""
             SELECT Abbreviation, TeamName, SUM(Points) as TotalPoints, COUNT(DISTINCT RaceNumber) as Races
-            FROM Results_Clean WHERE Year = {year}
+            FROM "Results_Clean" WHERE Year = {year}
             GROUP BY Abbreviation
             ORDER BY TotalPoints DESC
         """, engine)
@@ -173,7 +173,7 @@ async def get_standings(year: int = 2026):
         # Classement constructeurs
         constructors = pd.read_sql_query(f"""
             SELECT TeamName, SUM(Points) as TotalPoints
-            FROM Results_Clean WHERE Year = {year}
+            FROM "Results_Clean" WHERE Year = {year}
             GROUP BY TeamName
             ORDER BY TotalPoints DESC
         """, engine)
@@ -193,8 +193,8 @@ async def get_points_evolution(year: int = 2026):
     engine = get_engine()
     df = pd.read_sql_query(f"""
         SELECT r.Abbreviation, r.TeamName, r.RaceNumber, r.Points, ra.EventName
-        FROM Results_Clean r
-        LEFT JOIN Races_Clean ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
+        FROM "Results_Clean" r
+        LEFT JOIN "Races_Clean" ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
         WHERE r.Year = {year}
         ORDER BY r.RaceNumber
     """, engine)
@@ -231,7 +231,7 @@ async def compare_drivers(driver1: str, driver2: str, year: int = 2026):
     stats = {}
     for driver in [driver1, driver2]:
         df = pd.read_sql_query(f"""
-            SELECT * FROM Results_Clean WHERE Year = {year} AND Abbreviation = '{driver}'
+            SELECT * FROM "Results_Clean" WHERE Year = {year} AND Abbreviation = '{driver}'
             ORDER BY RaceNumber
         """, engine)
         
@@ -291,7 +291,7 @@ async def predict_race(request: PredictionRequest):
     engine = get_engine()
     
     # Récupérer la forme des pilotes
-    real_results = pd.read_sql_query("SELECT * FROM Results_Clean WHERE Year = 2026", engine)
+    real_results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE Year = 2026', engine)
     
     driver_form = {}
     for driver in request.grid.keys():
@@ -491,7 +491,7 @@ async def save_prediction(data: dict):
         # Créer la table si elle n'existe pas
         if engine.dialect.name == 'postgresql':
             conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS Predictions (
+                CREATE TABLE IF NOT EXISTS "Predictions" (
                     id SERIAL PRIMARY KEY,
                     race_name TEXT,
                     year INTEGER,
@@ -502,7 +502,7 @@ async def save_prediction(data: dict):
             """))
         else:
             conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS Predictions (
+                CREATE TABLE IF NOT EXISTS "Predictions" (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     race_name TEXT,
                     year INTEGER,
@@ -514,7 +514,7 @@ async def save_prediction(data: dict):
         
         import json
         conn.execute(
-            text("INSERT INTO Predictions (race_name, year, race_number, prediction_data) VALUES (:rn, :y, :num, :data)"),
+            text('INSERT INTO "Predictions" (race_name, year, race_number, prediction_data) VALUES (:rn, :y, :num, :data)'),
             {"rn": data.get('race_name'), "y": data.get('year'), "num": data.get('race_number'), "data": json.dumps(data.get('results', []))}
         )
     
@@ -526,7 +526,7 @@ async def get_prediction_history():
     engine = get_engine()
     
     try:
-        df = pd.read_sql_query("SELECT * FROM Predictions ORDER BY created_at DESC", engine)
+        df = pd.read_sql_query('SELECT * FROM "Predictions" ORDER BY created_at DESC', engine)
         return df.to_dict(orient='records')
     except Exception:
         return []
@@ -538,8 +538,8 @@ async def get_accuracy():
     
     try:
         import json
-        predictions = pd.read_sql_query("SELECT * FROM Predictions", engine)
-        results = pd.read_sql_query("SELECT * FROM Results_Clean WHERE Year = 2026", engine)
+        predictions = pd.read_sql_query('SELECT * FROM "Predictions"', engine)
+        results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE Year = 2026', engine)
         
         if predictions.empty:
             return {'global_mae': None, 'per_race': []}
@@ -589,11 +589,11 @@ async def force_update():
 async def get_drivers(year: int = 2026):
     """Retourne la liste des pilotes pour une saison."""
     engine = get_engine()
-    last_race = pd.read_sql_query(f"SELECT MAX(RaceNumber) as max_rn FROM Results_Clean WHERE Year = {year}", engine).iloc[0]['max_rn']
+    last_race = pd.read_sql_query(f'SELECT MAX(RaceNumber) as max_rn FROM "Results_Clean" WHERE Year = {year}', engine).iloc[0]['max_rn']
     
     drivers = pd.read_sql_query(f"""
         SELECT Abbreviation, TeamName 
-        FROM Results_Clean 
+        FROM "Results_Clean" 
         WHERE Year = {year} AND RaceNumber = {last_race}
         ORDER BY Position
     """, engine)

@@ -8,8 +8,8 @@ def inspect_data():
     """
     engine = get_engine()
     
-    df_results = pd.read_sql_query("SELECT * FROM Results", engine)
-    df_races = pd.read_sql_query("SELECT * FROM Races", engine)
+    df_results = pd.read_sql_query('SELECT * FROM "Results"', engine)
+    df_races = pd.read_sql_query('SELECT * FROM "Races"', engine)
     
     print("=" * 60)
     print("🔍 INSPECTION DE LA TABLE 'RESULTS'")
@@ -63,8 +63,8 @@ def clean_data():
     """
     engine = get_engine()
     
-    df_results = pd.read_sql_query("SELECT * FROM Results", engine)
-    df_races = pd.read_sql_query("SELECT * FROM Races", engine)
+    df_results = pd.read_sql_query('SELECT * FROM "Results"', engine)
+    df_races = pd.read_sql_query('SELECT * FROM "Races"', engine)
     
     print("\n" + "=" * 60)
     print("🧹 NETTOYAGE EN COURS...")
