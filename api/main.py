@@ -191,71 +191,79 @@ async def get_standings(year: int = 2026):
 async def get_points_evolution(year: int = 2026):
     """Retourne l'évolution des points cumulés par course pour chaque pilote."""
     engine = get_engine()
-    df = pd.read_sql_query(f"""
-        SELECT r.Abbreviation, r.TeamName, r.RaceNumber, r.Points, ra.EventName
-        FROM "Results_Clean" r
-        LEFT JOIN "Races_Clean" ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
-        WHERE r.Year = {year}
-        ORDER BY r.RaceNumber
-    """, engine)
-    
-    if df.empty:
-        return {'labels': [], 'datasets': []}
-    
-    # Calculer les points cumulés
-    races = df.groupby('RaceNumber').first()['EventName'].tolist()
-    datasets = []
-    
-    for driver in df['Abbreviation'].unique():
-        d = df[df['Abbreviation'] == driver].sort_values('RaceNumber')
-        team = d['TeamName'].iloc[-1]
-        cumulative = d['Points'].cumsum().tolist()
+    try:
+        df = pd.read_sql_query(f"""
+            SELECT r.Abbreviation, r.TeamName, r.RaceNumber, r.Points, ra.EventName
+            FROM "Results_Clean" r
+            LEFT JOIN "Races_Clean" ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
+            WHERE r.Year = {year}
+            ORDER BY r.RaceNumber
+        """, engine)
         
-        datasets.append({
-            'driver': driver,
-            'team': team,
-            'color': TEAM_COLORS.get(team, '#FFFFFF'),
-            'points': cumulative
-        })
-    
-    # Trier par total de points (le leader en premier)
-    datasets.sort(key=lambda x: x['points'][-1] if x['points'] else 0, reverse=True)
-    
-    return {'labels': races, 'datasets': datasets}
+        if df.empty:
+            return {'labels': [], 'datasets': []}
+        
+        # Calculer les points cumulés
+        races = df.groupby('RaceNumber').first()['EventName'].tolist()
+        datasets = []
+        
+        for driver in df['Abbreviation'].unique():
+            d = df[df['Abbreviation'] == driver].sort_values('RaceNumber')
+            team = d['TeamName'].iloc[-1]
+            cumulative = d['Points'].cumsum().tolist()
+            
+            datasets.append({
+                'driver': driver,
+                'team': team,
+                'color': TEAM_COLORS.get(team, '#FFFFFF'),
+                'points': cumulative
+            })
+        
+        # Trier par total de points (le leader en premier)
+        datasets.sort(key=lambda x: x['points'][-1] if x['points'] else 0, reverse=True)
+        
+        return {'labels': races, 'datasets': datasets}
+    except Exception as e:
+        print(f"Error in get_points_evolution: {e}")
+        return {'labels': [], 'datasets': []}
 
 @app.get("/api/compare")
 async def compare_drivers(driver1: str, driver2: str, year: int = 2026):
     """Comparaison head-to-head entre deux pilotes."""
     engine = get_engine()
     
-    stats = {}
-    for driver in [driver1, driver2]:
-        df = pd.read_sql_query(f"""
-            SELECT * FROM "Results_Clean" WHERE Year = {year} AND Abbreviation = '{driver}'
-            ORDER BY RaceNumber
-        """, engine)
-        
-        if df.empty:
-            stats[driver] = None
-            continue
+    try:
+        stats = {}
+        for driver in [driver1, driver2]:
+            df = pd.read_sql_query(f"""
+                SELECT * FROM "Results_Clean" WHERE Year = {year} AND Abbreviation = '{driver}'
+                ORDER BY RaceNumber
+            """, engine)
             
-        stats[driver] = {
-            'abbreviation': driver,
-            'team': df['TeamName'].iloc[-1],
-            'color': TEAM_COLORS.get(df['TeamName'].iloc[-1], '#FFF'),
-            'total_points': int(df['Points'].sum()),
-            'avg_position': round(df['Position'].mean(), 1),
-            'avg_grid': round(df['GridPosition'].mean(), 1),
-            'best_finish': int(df['Position'].min()),
-            'podiums': int((df['Position'] <= 3).sum()),
-            'wins': int((df['Position'] == 1).sum()),
-            'dnfs': int(df['DNF'].sum()) if 'DNF' in df.columns else 0,
-            'races': len(df),
-            'positions': df['Position'].tolist(),
-            'grid_positions': df['GridPosition'].tolist()
-        }
-    
-    return stats
+            if df.empty:
+                stats[driver] = None
+                continue
+                
+            stats[driver] = {
+                'abbreviation': driver,
+                'team': df['TeamName'].iloc[-1],
+                'color': TEAM_COLORS.get(df['TeamName'].iloc[-1], '#FFF'),
+                'total_points': int(df['Points'].sum()),
+                'avg_position': round(df['Position'].mean(), 1),
+                'avg_grid': round(df['GridPosition'].mean(), 1),
+                'best_finish': int(df['Position'].min()),
+                'podiums': int((df['Position'] <= 3).sum()),
+                'wins': int((df['Position'] == 1).sum()),
+                'dnfs': int(df['DNF'].sum()) if 'DNF' in df.columns else 0,
+                'races': len(df),
+                'positions': df['Position'].tolist(),
+                'grid_positions': df['GridPosition'].tolist()
+            }
+        
+        return stats
+    except Exception as e:
+        print(f"Error in compare_drivers: {e}")
+        return {}
 
 # =========================================================================
 # API ENDPOINTS — PREDICTION
