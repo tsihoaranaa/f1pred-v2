@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Pred — Espace Personnel</title>
+    <meta name="description" content="Suivi de vos prédictions F1 et score de précision">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏎️</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <a href="/" class="sidebar-logo"><span>F1<span class="accent">Pred</span> <small style="font-size:11px;color:var(--text-muted);font-weight:400;">by Tsihoarana</small></span></a>
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-link"><span class="icon">📊</span><span class="nav-text">Dashboard</span></a>
+                <a href="/prediction" class="nav-link"><span class="icon">🔮</span><span class="nav-text">Prédiction</span></a>
+                <a href="/perso" class="nav-link active"><span class="icon">👤</span><span class="nav-text">Perso</span></a>
+            </nav>
+            <button class="theme-toggle" onclick="toggleTheme()"><span class="icon">🌙</span><span>Mode Sombre</span></button>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Espace Personnel</h1>
+                <p>Suivi de vos prédictions et score de précision</p>
+            </div>
+
+            <!-- Accuracy Cards -->
+            <div class="grid-3 animate-in" style="margin-bottom: 24px;">
+                <div class="stat-card delay-1">
+                    <div class="stat-label">Précision Globale (MAE)</div>
+                    <div class="stat-value" id="stat-mae">—</div>
+                    <div class="stat-detail">positions d'écart en moyenne</div>
+                </div>
+                <div class="stat-card delay-2">
+                    <div class="stat-label">Prédictions Effectuées</div>
+                    <div class="stat-value" id="stat-pred-count">0</div>
+                </div>
+                <div class="stat-card delay-3">
+                    <div class="stat-label">Meilleure Précision</div>
+                    <div class="stat-value" id="stat-best-mae">—</div>
+                    <div class="stat-detail" id="stat-best-race"></div>
+                </div>
+            </div>
+
+            <!-- Accuracy Chart -->
+            <div class="card animate-in delay-2" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Évolution de la Précision</div>
+                        <div class="card-subtitle">MAE par course (plus bas = plus précis)</div>
+                    </div>
+                </div>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="accuracy-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Prediction History -->
+            <div class="card animate-in delay-3">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Historique des Prédictions</div>
+                        <div class="card-subtitle">Vos prédictions sauvegardées</div>
+                    </div>
+                </div>
+                <div id="prediction-history">
+                    <div class="loading-spinner"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/perso.js"></script>
+</body>
+</html>

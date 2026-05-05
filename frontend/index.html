@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Pred — Dashboard</title>
+    <meta name="description" content="Dashboard de prédiction de Formule 1 avec Machine Learning">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏎️</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="/" class="sidebar-logo">
+                <span>F1<span class="accent">Pred</span> <small style="font-size:11px;color:var(--text-muted);font-weight:400;">by Tsihoarana</small></span>
+            </a>
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-link active">
+                    <span class="icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="/prediction" class="nav-link">
+                    <span class="icon">🔮</span>
+                    <span class="nav-text">Prédiction</span>
+                </a>
+                <a href="/perso" class="nav-link">
+                    <span class="icon">👤</span>
+                    <span class="nav-text">Perso</span>
+                </a>
+            </nav>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="icon">🌙</span>
+                <span>Mode Sombre</span>
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Vue d'ensemble de la saison de Formule 1</p>
+                </div>
+                <div class="card" style="padding:12px 20px; display:flex; flex-direction:column; align-items:center; min-width:150px; background:var(--f1-red-light); border-color:var(--f1-red);">
+                    <span style="font-size:11px; font-weight:600; color:var(--f1-red); text-transform:uppercase; letter-spacing:0.5px;">Prochaine Course</span>
+                    <span id="countdown" style="font-size:18px; font-weight:700; color:var(--text-primary);">--:--:--</span>
+                </div>
+            </div>
+
+            <!-- Season Selector -->
+            <div class="season-selector" style="margin-bottom: 24px;">
+                <button class="season-btn" data-year="2024" onclick="changeSeason(2024)">2024</button>
+                <button class="season-btn" data-year="2025" onclick="changeSeason(2025)">2025</button>
+                <button class="season-btn active" data-year="2026" onclick="changeSeason(2026)">2026</button>
+            </div>
+
+            <!-- Stat Cards Row -->
+            <div class="grid-4 animate-in" id="stat-cards" style="margin-bottom: 24px;">
+                <div class="stat-card delay-1">
+                    <div class="stat-label">Courses disputées</div>
+                    <div class="stat-value" id="stat-races">—</div>
+                </div>
+                <div class="stat-card delay-2">
+                    <div class="stat-label">Leader du championnat</div>
+                    <div class="stat-value" id="stat-leader">—</div>
+                    <div class="stat-detail" id="stat-leader-pts"></div>
+                </div>
+                <div class="stat-card delay-3">
+                    <div class="stat-label">Meilleure écurie</div>
+                    <div class="stat-value" id="stat-team">—</div>
+                    <div class="stat-detail" id="stat-team-pts"></div>
+                </div>
+                <div class="stat-card delay-4">
+                    <div class="stat-label">Dernière course</div>
+                    <div class="stat-value" id="stat-last-race">—</div>
+                    <div class="stat-detail" id="stat-last-winner"></div>
+                </div>
+            </div>
+
+            <!-- Points Evolution Chart -->
+            <div class="card animate-in delay-1" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Évolution des Points</div>
+                        <div class="card-subtitle">Points cumulés au fil de la saison</div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-secondary" onclick="toggleAllDrivers(true)" style="padding:6px 14px; font-size:12px;">Tout afficher</button>
+                        <button class="btn btn-secondary" onclick="toggleAllDrivers(false)" style="padding:6px 14px; font-size:12px;">Tout masquer</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="points-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Two columns: Standings + Constructors -->
+            <div class="grid-2 animate-in delay-2" style="margin-bottom: 24px;">
+                <!-- Driver Standings -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Classement Pilotes</div>
+                    </div>
+                    <div id="driver-standings">
+                        <div class="loading-spinner"><div class="spinner"></div></div>
+                    </div>
+                </div>
+
+                <!-- Constructor Standings -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Classement Constructeurs</div>
+                    </div>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="constructor-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Head to Head Comparison -->
+            <div class="card animate-in delay-3" style="margin-bottom: 24px;">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Comparaison Head-to-Head</div>
+                        <div class="card-subtitle">Compare les performances de deux pilotes</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 16px; margin-bottom: 20px; align-items: end;">
+                    <div style="flex:1;">
+                        <label class="form-label">Pilote 1</label>
+                        <select class="form-select" id="compare-driver1"></select>
+                    </div>
+                    <span style="color: var(--text-muted); font-weight: 700; padding-bottom: 10px;">VS</span>
+                    <div style="flex:1;">
+                        <label class="form-label">Pilote 2</label>
+                        <select class="form-select" id="compare-driver2"></select>
+                    </div>
+                    <button class="btn btn-primary" onclick="loadComparison()">Comparer</button>
+                </div>
+                <div id="comparison-result"></div>
+            </div>
+
+            <!-- Race Results Table -->
+            <div class="card animate-in delay-4">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Résultats des Courses</div>
+                        <div class="card-subtitle">Détail course par course</div>
+                    </div>
+                    <select class="form-select" id="race-selector" style="width: 250px;" onchange="loadRaceResults()"></select>
+                </div>
+                <div id="race-results">
+                    <div class="loading-spinner"><div class="spinner"></div></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

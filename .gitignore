@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables
+.env
+.env.local
+
+# FastF1 Cache
+data/cache/
+
+# Optional: Ignore the database if you don't want to push it
+# If you want to push the initial DB so it works out of the box, comment this out:
+# data/f1pred.db
+
+# Optional: Ignore models if they are too big (not the case here, f1_model.pkl is small so we keep it)
+# models/*.pkl

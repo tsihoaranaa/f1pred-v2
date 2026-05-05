@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Pred — Prédiction</title>
+    <meta name="description" content="Prédisez le résultat du prochain Grand Prix de Formule 1">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏎️</text></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <a href="/" class="sidebar-logo"><span>F1<span class="accent">Pred</span> <small style="font-size:11px;color:var(--text-muted);font-weight:400;">by Tsihoarana</small></span></a>
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-link"><span class="icon">📊</span><span class="nav-text">Dashboard</span></a>
+                <a href="/prediction" class="nav-link active"><span class="icon">🔮</span><span class="nav-text">Prédiction</span></a>
+                <a href="/perso" class="nav-link"><span class="icon">👤</span><span class="nav-text">Perso</span></a>
+            </nav>
+            <button class="theme-toggle" onclick="toggleTheme()"><span class="icon">🌙</span><span>Mode Sombre</span></button>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Prédiction</h1>
+                <p>Simulez le résultat du prochain Grand Prix</p>
+            </div>
+
+            <!-- Configuration -->
+            <div class="grid-2 animate-in" style="margin-bottom: 24px;">
+                <!-- Weather -->
+                <div class="card delay-1">
+                    <div class="card-header">
+                        <div class="card-title">🌤️ Conditions Météo</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div>
+                            <label class="form-label">Température air : <span id="air-temp-val">25</span>°C</label>
+                            <input type="range" class="range-slider" id="air-temp" min="10" max="45" value="25" oninput="document.getElementById('air-temp-val').textContent=this.value">
+                        </div>
+                        <div>
+                            <label class="form-label">Température piste : <span id="track-temp-val">40</span>°C</label>
+                            <input type="range" class="range-slider" id="track-temp" min="15" max="65" value="40" oninput="document.getElementById('track-temp-val').textContent=this.value">
+                        </div>
+                        <div>
+                            <label class="form-label">Humidité : <span id="humidity-val">50</span>%</label>
+                            <input type="range" class="range-slider" id="humidity" min="10" max="100" value="50" oninput="document.getElementById('humidity-val').textContent=this.value">
+                        </div>
+                        <div>
+                            <label class="form-label">Vitesse du vent : <span id="wind-val">10</span> km/h</label>
+                            <input type="range" class="range-slider" id="wind-speed" min="0" max="40" value="10" oninput="document.getElementById('wind-val').textContent=this.value">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <label class="form-label" style="margin:0">Pluie</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="rainfall">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Setup -->
+                <div class="card delay-2">
+                    <div class="card-header">
+                        <div class="card-title">🏎️ Grille de Départ</div>
+                        <button class="btn btn-secondary" onclick="autoGrid()">Auto</button>
+                    </div>
+                    <div id="grid-inputs" style="max-height: 400px; overflow-y: auto;">
+                        <div class="loading-spinner"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explanation -->
+            <div class="grid-2 animate-in delay-3" style="margin-bottom: 20px;">
+                <div class="card" style="border-left: 3px solid var(--f1-red); padding: 16px 20px;">
+                    <div style="font-weight:600; font-size:14px; margin-bottom:6px;">🏁 Prédiction XGBoost</div>
+                    <p style="font-size:13px; color:var(--text-secondary); line-height:1.5;">
+                        Donne <strong>un seul classement</strong>, le plus probable selon le modèle. 
+                        Rapide et direct : chaque pilote obtient une position fixe basée sur sa forme, sa grille et la météo.
+                    </p>
+                </div>
+                <div class="card" style="border-left: 3px solid #FF9500; padding: 16px 20px;">
+                    <div style="font-weight:600; font-size:14px; margin-bottom:6px;">🎲 Simulation Monte Carlo</div>
+                    <p style="font-size:13px; color:var(--text-secondary); line-height:1.5;">
+                        Simule la course <strong>3000 fois</strong> avec de l'aléatoire (crashes, safety cars, pannes). 
+                        Donne des <strong>probabilités</strong> : "Antonelli a 34% de chances de gagner" au lieu d'un résultat fixe.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Run Prediction -->
+            <div class="animate-in delay-4" style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <button class="btn btn-primary" onclick="runPrediction()" id="btn-predict">
+                    🏁 Lancer la Prédiction
+                </button>
+                <button class="btn btn-secondary" onclick="runMonteCarlo()" id="btn-monte-carlo">
+                    🎲 Simulation Monte Carlo
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div class="grid-2">
+                <div class="card" id="prediction-card" style="display:none;">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">🏆 Résultat Prédit</div>
+                            <div class="card-subtitle">Classement le plus probable (XGBoost)</div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="savePrediction()">💾 Sauvegarder</button>
+                    </div>
+                    <div id="prediction-result"></div>
+                </div>
+
+                <div class="card" id="monte-carlo-card" style="display:none;">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">🎲 Probabilités Monte Carlo</div>
+                            <div class="card-subtitle">Basé sur 3000 simulations</div>
+                        </div>
+                    </div>
+                    <div id="monte-carlo-result"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/js/common.js"></script>
+    <script src="/static/js/prediction.js"></script>
+</body>
+</html>
