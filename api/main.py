@@ -138,46 +138,54 @@ async def serve_perso():
 async def get_results(year: int = 2026):
     """Retourne tous les résultats d'une saison."""
     engine = get_engine()
-    df = pd.read_sql_query(f"""
-        SELECT r.*, ra.EventName, ra.Country, ra.EventDate
-        FROM Results_Clean r
-        LEFT JOIN Races_Clean ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
-        WHERE r.Year = {year}
-        ORDER BY r.RaceNumber, r.Position
-    """, engine)
-    
-    # Ajouter les couleurs des écuries
-    df['TeamColor'] = df['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
-    
-    return df.to_dict(orient='records')
+    try:
+        df = pd.read_sql_query(f"""
+            SELECT r.*, ra.EventName, ra.Country, ra.EventDate
+            FROM Results_Clean r
+            LEFT JOIN Races_Clean ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
+            WHERE r.Year = {year}
+            ORDER BY r.RaceNumber, r.Position
+        """, engine)
+        
+        # Ajouter les couleurs des écuries
+        df['TeamColor'] = df['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
+        
+        return df.to_dict(orient='records')
+    except Exception as e:
+        print(f"Error in get_results: {e}")
+        return []
 
 @app.get("/api/standings")
 async def get_standings(year: int = 2026):
     """Retourne le classement pilotes et constructeurs."""
     engine = get_engine()
     
-    # Classement pilotes
-    drivers = pd.read_sql_query(f"""
-        SELECT Abbreviation, TeamName, SUM(Points) as TotalPoints, COUNT(DISTINCT RaceNumber) as Races
-        FROM Results_Clean WHERE Year = {year}
-        GROUP BY Abbreviation
-        ORDER BY TotalPoints DESC
-    """, engine)
-    drivers['TeamColor'] = drivers['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
-    
-    # Classement constructeurs
-    constructors = pd.read_sql_query(f"""
-        SELECT TeamName, SUM(Points) as TotalPoints
-        FROM Results_Clean WHERE Year = {year}
-        GROUP BY TeamName
-        ORDER BY TotalPoints DESC
-    """, engine)
-    constructors['TeamColor'] = constructors['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
-    
-    return {
-        'drivers': drivers.to_dict(orient='records'),
-        'constructors': constructors.to_dict(orient='records')
-    }
+    try:
+        # Classement pilotes
+        drivers = pd.read_sql_query(f"""
+            SELECT Abbreviation, TeamName, SUM(Points) as TotalPoints, COUNT(DISTINCT RaceNumber) as Races
+            FROM Results_Clean WHERE Year = {year}
+            GROUP BY Abbreviation
+            ORDER BY TotalPoints DESC
+        """, engine)
+        drivers['TeamColor'] = drivers['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
+        
+        # Classement constructeurs
+        constructors = pd.read_sql_query(f"""
+            SELECT TeamName, SUM(Points) as TotalPoints
+            FROM Results_Clean WHERE Year = {year}
+            GROUP BY TeamName
+            ORDER BY TotalPoints DESC
+        """, engine)
+        constructors['TeamColor'] = constructors['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
+        
+        return {
+            'drivers': drivers.to_dict(orient='records'),
+            'constructors': constructors.to_dict(orient='records')
+        }
+    except Exception as e:
+        print(f"Error in get_standings: {e}")
+        return {'drivers': [], 'constructors': []}
 
 @app.get("/api/points-evolution")
 async def get_points_evolution(year: int = 2026):
