@@ -115,7 +115,7 @@ async def debug_db():
         info["tables"] = inspector.get_table_names()
         
         if "Results_Clean" in info["tables"]:
-            df = pd.read_sql_query('SELECT COUNT(*) as count FROM "Results_Clean" WHERE Year = 2026', engine)
+            df = pd.read_sql_query('SELECT COUNT(*) as "count" FROM "Results_Clean" WHERE "Year" = 2026', engine)
             info["count_2026"] = int(df['count'].iloc[0])
     except Exception as e:
         info["error"] = str(e)
@@ -165,11 +165,11 @@ async def get_results(year: int = 2026):
     engine = get_engine()
     try:
         df = pd.read_sql_query(f"""
-            SELECT r.*, ra.EventName, ra.Country, ra.EventDate
+            SELECT r.*, ra."EventName", ra."Country", ra."EventDate"
             FROM "Results_Clean" r
-            LEFT JOIN "Races_Clean" ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
-            WHERE r.Year = {year}
-            ORDER BY r.RaceNumber, r.Position
+            LEFT JOIN "Races_Clean" ra ON r."Year" = ra."Year" AND r."RaceNumber" = ra."RaceNumber"
+            WHERE r."Year" = {year}
+            ORDER BY r."RaceNumber", r."Position"
         """, engine)
         
         # Ajouter les couleurs des écuries
@@ -188,19 +188,19 @@ async def get_standings(year: int = 2026):
     try:
         # Classement pilotes
         drivers = pd.read_sql_query(f"""
-            SELECT Abbreviation, TeamName, SUM(Points) as TotalPoints, COUNT(DISTINCT RaceNumber) as Races
-            FROM "Results_Clean" WHERE Year = {year}
-            GROUP BY Abbreviation
-            ORDER BY TotalPoints DESC
+            SELECT "Abbreviation", "TeamName", SUM("Points") as "TotalPoints", COUNT(DISTINCT "RaceNumber") as "Races"
+            FROM "Results_Clean" WHERE "Year" = {year}
+            GROUP BY "Abbreviation", "TeamName"
+            ORDER BY "TotalPoints" DESC
         """, engine)
         drivers['TeamColor'] = drivers['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
         
         # Classement constructeurs
         constructors = pd.read_sql_query(f"""
-            SELECT TeamName, SUM(Points) as TotalPoints
-            FROM "Results_Clean" WHERE Year = {year}
-            GROUP BY TeamName
-            ORDER BY TotalPoints DESC
+            SELECT "TeamName", SUM("Points") as "TotalPoints"
+            FROM "Results_Clean" WHERE "Year" = {year}
+            GROUP BY "TeamName"
+            ORDER BY "TotalPoints" DESC
         """, engine)
         constructors['TeamColor'] = constructors['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
         
@@ -218,11 +218,11 @@ async def get_points_evolution(year: int = 2026):
     engine = get_engine()
     try:
         df = pd.read_sql_query(f"""
-            SELECT r.Abbreviation, r.TeamName, r.RaceNumber, r.Points, ra.EventName
+            SELECT r."Abbreviation", r."TeamName", r."RaceNumber", r."Points", ra."EventName"
             FROM "Results_Clean" r
-            LEFT JOIN "Races_Clean" ra ON r.Year = ra.Year AND r.RaceNumber = ra.RaceNumber
-            WHERE r.Year = {year}
-            ORDER BY r.RaceNumber
+            LEFT JOIN "Races_Clean" ra ON r."Year" = ra."Year" AND r."RaceNumber" = ra."RaceNumber"
+            WHERE r."Year" = {year}
+            ORDER BY r."RaceNumber"
         """, engine)
         
         if df.empty:
@@ -261,9 +261,9 @@ async def compare_drivers(driver1: str, driver2: str, year: int = 2026):
         stats = {}
         for driver in [driver1, driver2]:
             df = pd.read_sql_query(f"""
-                SELECT * FROM "Results_Clean" WHERE Year = {year} AND Abbreviation = '{driver}'
-                ORDER BY RaceNumber
-            """, engine)
+            SELECT * FROM "Results_Clean" WHERE "Year" = {year} AND "Abbreviation" = '{driver}'
+            ORDER BY "RaceNumber"
+        """, engine)
             
             if df.empty:
                 stats[driver] = None
@@ -324,7 +324,7 @@ async def predict_race(request: PredictionRequest):
     engine = get_engine()
     
     # Récupérer la forme des pilotes
-    real_results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE Year = 2026', engine)
+    real_results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE "Year" = 2026', engine)
     
     driver_form = {}
     for driver in request.grid.keys():
@@ -402,7 +402,7 @@ async def monte_carlo(request: PredictionRequest, n_simulations: int = 3000):
     model = get_model()
     engine = get_engine()
     
-    real_results = pd.read_sql_query("SELECT * FROM Results_Clean WHERE Year = 2026", engine)
+    real_results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE "Year" = 2026', engine)
     
     driver_form = {}
     for driver in request.grid.keys():
@@ -572,7 +572,7 @@ async def get_accuracy():
     try:
         import json
         predictions = pd.read_sql_query('SELECT * FROM "Predictions"', engine)
-        results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE Year = 2026', engine)
+        results = pd.read_sql_query('SELECT * FROM "Results_Clean" WHERE "Year" = 2026', engine)
         
         if predictions.empty:
             return {'global_mae': None, 'per_race': []}
@@ -622,13 +622,13 @@ async def force_update():
 async def get_drivers(year: int = 2026):
     """Retourne la liste des pilotes pour une saison."""
     engine = get_engine()
-    last_race = pd.read_sql_query(f'SELECT MAX(RaceNumber) as max_rn FROM "Results_Clean" WHERE Year = {year}', engine).iloc[0]['max_rn']
+    last_race = pd.read_sql_query(f'SELECT MAX("RaceNumber") as "max_rn" FROM "Results_Clean" WHERE "Year" = {year}', engine).iloc[0]['max_rn']
     
     drivers = pd.read_sql_query(f"""
-        SELECT Abbreviation, TeamName 
+        SELECT "Abbreviation", "TeamName" 
         FROM "Results_Clean" 
-        WHERE Year = {year} AND RaceNumber = {last_race}
-        ORDER BY Position
+        WHERE "Year" = {year} AND "RaceNumber" = {last_race}
+        ORDER BY "Position"
     """, engine)
     drivers['TeamColor'] = drivers['TeamName'].map(TEAM_COLORS).fillna('#FFFFFF')
     
