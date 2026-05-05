@@ -97,6 +97,31 @@ def get_model():
         _model_cache = joblib.load(model_path)
     return _model_cache
 
+@app.get("/api/debug")
+async def debug_db():
+    """Endpoint de diagnostic pour vérifier ce que l'API voit réellement."""
+    engine = get_engine()
+    info = {
+        "database_url_present": os.environ.get("DATABASE_URL") is not None,
+        "engine_type": str(engine.url),
+        "tables": [],
+        "count_2026": 0,
+        "error": None
+    }
+    
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        info["tables"] = inspector.get_table_names()
+        
+        if "Results_Clean" in info["tables"]:
+            df = pd.read_sql_query('SELECT COUNT(*) as count FROM "Results_Clean" WHERE Year = 2026', engine)
+            info["count_2026"] = int(df['count'].iloc[0])
+    except Exception as e:
+        info["error"] = str(e)
+        
+    return info
+
 # Couleurs des écuries
 TEAM_COLORS = {
     'Red Bull Racing': '#3671C6',
