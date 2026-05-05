@@ -87,10 +87,15 @@ app.mount("/static", StaticFiles(directory=frontend_path), name="static")
 
 from database import get_engine
 
+_model_cache = None
+
 def get_model():
-    """Charger le modèle entraîné."""
-    model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'f1_model.pkl')
-    return joblib.load(model_path)
+    """Charger le modèle entraîné (avec cache pour éviter de le recharger à chaque requête)."""
+    global _model_cache
+    if _model_cache is None:
+        model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'f1_model.pkl')
+        _model_cache = joblib.load(model_path)
+    return _model_cache
 
 # Couleurs des écuries
 TEAM_COLORS = {
